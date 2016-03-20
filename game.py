@@ -2,7 +2,7 @@ import os, time
 import pygame
 from pygame.locals import *
 import renderer
-
+from stick import SenseStick
 
 DESKTOP = 1
 SENSE_HAT = 2
@@ -25,13 +25,14 @@ def load_image(file):
 
 class Rollerball(object):
 
-    def __init__(self, platform=DESKTOP):
+    def __init__(self, platform=SENSE_HAT):
 
         # init correct display renderer
         if platform == SENSE_HAT:
+            print 'Using SenseHAT display'
             self.renderer = renderer.get_sensehat_renderer()
-            self.sensors
         else:
+            print 'Using desktop display'
             self.renderer = renderer.get_pygame_renderer()
 
         self.init_assets()
@@ -42,6 +43,7 @@ class Rollerball(object):
         self.board = Board()
         self.ball = Ball(2, 4)
         self.set_viewport(0, 0)
+        self.stick = SenseStick()
 
     def handle_input_events(self):
         for event in pygame.event.get():
@@ -57,6 +59,19 @@ class Rollerball(object):
                 self.move_up()
             elif event.type == KEYDOWN and (event.key == K_DOWN):
                 self.move_down()
+
+    def handle_stick_events(self):
+        event = self.stick.read()
+        print event
+        if event.key == SenseStick.KEY_UP and event.state == SenseStick.STATE_PRESS:
+            print 'Move up'
+            self.move_up()
+        elif event.key == SenseStick.KEY_DOWN and event.state == SenseStick.STATE_PRESS:
+            self.move_down()
+        elif event.key == SenseStick.KEY_RIGHT and event.state == SenseStick.STATE_PRESS:
+            self.move_right()
+        elif event.key == SenseStick.KEY_LEFT and event.state == SenseStick.STATE_PRESS:
+            self.move_left()
 
     def init_assets(self):
         # this is where we load all the game assets
@@ -109,6 +124,7 @@ class Rollerball(object):
         while not quit:
             # handle input events
             quit = self.handle_input_events()
+            self.handle_stick_events()
             self.render_board()
             time.sleep(0.1)
 
