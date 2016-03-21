@@ -1,4 +1,5 @@
-import os, time
+import os
+import time
 import pygame
 from pygame.locals import *
 import renderer
@@ -31,9 +32,12 @@ class Rollerball(object):
         if platform == SENSE_HAT:
             print 'Using SenseHAT display'
             self.renderer = renderer.get_sensehat_renderer()
+            self.stick = SenseStick()
         else:
             print 'Using desktop display'
             self.renderer = renderer.get_pygame_renderer()
+
+        self.platform = platform
 
         self.init_assets()
 
@@ -41,11 +45,10 @@ class Rollerball(object):
         self.maze_width = self.maze.width
         self.maze_height = self.maze.height
         self.board = Board()
-        self.ball = Ball(2, 4)
-        self.set_viewport(0, 0)
-        self.stick = SenseStick()
+        self.ball = Ball(3, 3)
+        self.set_viewport(7, 15)
 
-    def handle_input_events(self):
+    def handle_keyboard_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
                 return True
@@ -78,40 +81,48 @@ class Rollerball(object):
         self.ball_image = load_image('ball.png')
 
     def move_down(self):
-        if self.ball.y < renderer.ROWS-1:
-            self.ball.y += 1
         if self.view_y < self.maze_height - renderer.ROWS:
-            self.view_y += 1
+            cell_1 = self.board.cells[self.ball.x][self.ball.y+2]
+            cell_2 = self.board.cells[self.ball.x+1][self.ball.y+2]
+            if cell_1.colour != renderer.BLACK and cell_2.colour != renderer.BLACK:
+                self.view_y += 1
 
     def move_left(self):
-        if self.ball.x > 0:
-            self.ball.x -= 1
         if self.view_x > 0:
-            self.view_x -= 1
+            # check maze is clear to move right
+            cell_1 = self.board.cells[self.ball.x-1][self.ball.y]
+            cell_2 = self.board.cells[self.ball.x-1][self.ball.y+1]
+            if cell_1.colour != renderer.BLACK and cell_2.colour != renderer.BLACK:
+                self.view_x -= 1
 
     def move_right(self):
-        if self.ball.x < renderer.COLS-1:
-            self.ball.x += 1
         if self.view_x < self.maze_width - renderer.COLS:
-            self.view_x += 1
+            # check maze is clear to move right
+            cell_1 = self.board.cells[self.ball.x+2][self.ball.y]
+            cell_2 = self.board.cells[self.ball.x+2][self.ball.y+1]
+            if cell_1.colour != renderer.BLACK and cell_2.colour != renderer.BLACK:
+                self.view_x += 1
 
     def move_up(self):
-        if self.ball.y > 0:
-            self.ball.y -= 1
         if self.view_y > 0:
-            self.view_y -= 1
+            cell_1 = self.board.cells[self.ball.x][self.ball.y-1]
+            cell_2 = self.board.cells[self.ball.x+1][self.ball.y-1]
+            if cell_1.colour != renderer.BLACK and cell_2.colour != renderer.BLACK:
+                self.view_y -= 1
 
     def render_board(self):
         '''
         render_board creates an 8x8 board that can be passed to a renderer
         '''
 
-        # init board
-        #self.board.init_board()
-
         self.board.cells = self.maze.get_cells(self.view_x, self.view_y)
         # overlay ball position
-        self.board.cells[self.ball.x][self.ball.y].set_colour(renderer.BLUE)
+        ball_cells = self.ball.get_cells()
+        self.board.cells[3][3].set_colour(ball_cells[0][0].colour)
+        self.board.cells[4][3].set_colour(ball_cells[1][0].colour)
+        self.board.cells[3][4].set_colour(ball_cells[0][1].colour)
+        self.board.cells[4][4].set_colour(ball_cells[1][1].colour)
+
         self.renderer.render(self.board.cells)
 
     def run(self):
@@ -122,9 +133,11 @@ class Rollerball(object):
         quit = False
 
         while not quit:
-            # handle input events
-            quit = self.handle_input_events()
-            self.handle_stick_events()
+            if self.platform == SENSE_HAT:
+                self.handle_stick_events()
+            else:
+                quit = self.handle_keyboard_events()
+
             self.render_board()
             time.sleep(0.1)
 
@@ -161,8 +174,18 @@ class Cell(object):
 class Ball(object):
 
     def __init__(self, x, y):
+        self.image = load_image('ball.png')
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
         self.x = x
         self.y = y
+
+    def get_cells(self):
+        cells = [
+            [Cell(self.image.get_at((x, y))) for y in range(self.height)]
+            for x in range(self.width)]
+
+        return cells
 
 
 class Maze(object):
@@ -174,7 +197,7 @@ class Maze(object):
 
     def get_cells(self, view_x, view_y):
         cells = [
-            [Cell(self.image.get_at((view_x + x,view_y + y))) for y in range(renderer.ROWS)]
+            [Cell(self.image.get_at((view_x + x, view_y + y))) for y in range(renderer.ROWS)]
             for x in range(renderer.COLS)]
 
         return cells
