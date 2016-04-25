@@ -3,13 +3,16 @@ from game import Rollerball, DESKTOP, SENSE_HAT
 import argparse
 
 parser = argparse.ArgumentParser(description='Rollerball')
-parser.add_argument('desktop', nargs='?', help='Render on desktop',  default=True)
+parser.add_argument('--sensehat', dest='sense_hat_display', action='store_true')
+parser.add_argument('--no-sensehat', dest='sense_hat_display', action='store_false')
+parser.set_defaults(sense_hat_display=True)
+
 args = parser.parse_args()
 
 if __name__ == "__main__":
 
-    if args.desktop:
-        game = Rollerball(platform=DESKTOP)
-    else:
+    if args.sense_hat_display:
         game = Rollerball(platform=SENSE_HAT)
+    else:
+        game = Rollerball(platform=DESKTOP)
     game.run()

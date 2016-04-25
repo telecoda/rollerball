@@ -201,5 +201,3 @@ class Maze(object):
             for x in range(renderer.COLS)]
 
         return cells
-
-
