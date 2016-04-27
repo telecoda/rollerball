@@ -46,7 +46,7 @@ class Rollerball(object):
         self.maze_height = self.maze.height
         self.board = Board()
         self.ball = Ball(3, 3)
-        self.set_viewport(7, 15)
+        self.set_viewport(0, 15)
 
     def handle_keyboard_events(self):
         for event in pygame.event.get():
@@ -110,20 +110,38 @@ class Rollerball(object):
             if cell_1.colour != renderer.BLACK and cell_2.colour != renderer.BLACK:
                 self.view_y -= 1
 
-    def render_board(self):
+    def render(self):
         '''
         render_board creates an 8x8 board that can be passed to a renderer
         '''
 
         self.board.cells = self.maze.get_cells(self.view_x, self.view_y)
+        self.overlay_ball_cells()
+        self.renderer.render(self.board.cells)
+
+    def overlay_ball_cells(self):
         # overlay ball position
         ball_cells = self.ball.get_cells()
-        self.board.cells[3][3].set_colour(ball_cells[0][0].colour)
-        self.board.cells[4][3].set_colour(ball_cells[1][0].colour)
-        self.board.cells[3][4].set_colour(ball_cells[0][1].colour)
-        self.board.cells[4][4].set_colour(ball_cells[1][1].colour)
+        
+        board_cell = self.board.cells[3][3]
+        ball_cell = ball_cells[0][0]
+        self.average_colour(board_cell, ball_cell)
+        board_cell = self.board.cells[4][3]
+        ball_cell = ball_cells[1][0]
+        self.average_colour(board_cell, ball_cell)
+        board_cell = self.board.cells[3][4]
+        ball_cell = ball_cells[0][1]
+        self.average_colour(board_cell, ball_cell)
+        board_cell = self.board.cells[4][4]
+        ball_cell = ball_cells[1][1]
+        self.average_colour(board_cell, ball_cell)
 
-        self.renderer.render(self.board.cells)
+    def average_colour(self, board_cell, ball_cell):
+        if board_cell.colour != renderer.WHITE:
+            temp_colour = ball_cell.colour - board_cell.colour
+            board_cell.colour = temp_colour
+        else:
+            board_cell.colour = ball_cell.colour
 
     def run(self):
         '''
@@ -138,7 +156,7 @@ class Rollerball(object):
             else:
                 quit = self.handle_keyboard_events()
 
-            self.render_board()
+            self.render()
             time.sleep(0.1)
 
     def set_viewport(self, x, y):
@@ -155,11 +173,6 @@ class Board(object):
         self.cells = [
             [Cell(renderer.WHITE) for y in range(renderer.ROWS)]
             for x in range(renderer.COLS)]
-
-        for y in range(0, renderer.ROWS):
-            self.cells[4][y].set_colour(renderer.RED)
-        for x in range(0, renderer.COLS):
-            self.cells[x][4].set_colour(renderer.RED)
 
 
 class Cell(object):
